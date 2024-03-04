@@ -23,7 +23,20 @@ genhlth_reverse_mapping = {v: k for k, v in genhlth_mapping.items()}
 
 # Create a Streamlit web application
 def main():
-    st.title("Diabetes Prediction Web App")
+    st.title("Diabetes Health Indicator")
+
+    # Create a sidebar
+    st.sidebar.title('Options')
+
+    # Add a BMI calculator with height and weight inputs
+    height = st.sidebar.number_input('Enter your height in cm', min_value=0.0)
+    weight = st.sidebar.number_input('Enter your weight in KG', min_value=0.0)
+
+    # Add a button to calculate BMI
+    if st.sidebar.button('Calculate BMI'):
+        # Calculate BMI
+        bmi = weight / ((height/100) ** 2)
+        st.sidebar.info(f'Your BMI: {bmi:.2f}')
 
     # Input columns and corresponding questions
     columns = [
@@ -47,16 +60,16 @@ def main():
     for column, question in columns[:9]:
         if column.lower() != 'age':
             if column.lower() != 'sex' and column.lower() != 'bmi':
-                input_form[column] = st.radio(question, ['Yes', 'No'])
+                input_form[column] = st.radio(question, ['Yes', 'No'], index=None)
             elif column.lower() == 'bmi':
-                input_form[column] = st.number_input(question, format="%.2f")
+                input_form[column] = st.slider(question, 18.0, 50.0, step=0.1, value=18.0)
     
     # Input form for sex
-    input_form['Sex'] = st.selectbox("Are you male or female?", ['Male', 'Female'])
+    input_form['Sex'] = st.selectbox("Are you male or female?", ['Male', 'Female'], index=None)
 
     # Add new question for overall health
-    selected_genhlth = st.selectbox("How is your overall health?", list(genhlth_mapping.keys()))
-    input_form['GenHlth'] = genhlth_mapping[selected_genhlth]
+    selected_genhlth = st.selectbox("How is your overall health?", ['Excellent', 'Very Good', 'Good', 'Fair', 'Poor'], index=None)
+    input_form['GenHlth'] = genhlth_mapping.get(selected_genhlth, 0)
 
     # Display age information in an expander section
     with st.expander("ℹ️ Age Information"):
@@ -74,29 +87,33 @@ def main():
         st.table(age_info_df.style.set_properties(**{'text-align': 'left'}))
 
     # Input form for age
-    input_form['Age'] = st.selectbox("What is your age?", [i for i in range(1, 13)])
+    input_form['Age'] = st.selectbox("What is your age?", [i for i in range(1, 13)], index=None)
 
     # Submit button
     if st.button("Submit"):
-        # Convert inputs to DataFrame
-        input_data = pd.DataFrame([input_form])
-
-        # Reorder columns to match model's feature order
-        input_data = input_data[['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack',
-                                 'PhysActivity', 'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Age']]
-
-        # Map 'Yes'/'No' and 'Male'/'Female' to 1/0
-        input_data.replace({'Yes': 1, 'No': 0, 'Male': 1, 'Female': 0}, inplace=True)
-
-        # Perform diabetes prediction
-        prediction = predict_diabetes(input_data)
-
-        # Display output
-        st.subheader("Diabetes Prediction:")
-        if prediction[0] == 1:
-            st.error("The person is predicted to be diabetic.")
+        # Check if all required fields are filled in
+        if '' in input_form.values():
+            st.error("Fill in all the values for better prediction.")
         else:
-            st.success("The person is predicted to be non-diabetic.")
+            # Convert inputs to DataFrame
+            input_data = pd.DataFrame([input_form])
+
+            # Reorder columns to match model's feature order
+            input_data = input_data[['HighBP', 'HighChol', 'BMI', 'Smoker', 'Stroke', 'HeartDiseaseorAttack',
+                                    'PhysActivity', 'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Age']]
+
+            # Map 'Yes'/'No' and 'Male'/'Female' to 1/0
+            input_data.replace({'Yes': 1, 'No': 0, 'Male': 1, 'Female': 0}, inplace=True)
+
+            # Perform diabetes prediction
+            prediction = predict_diabetes(input_data)
+
+            # Display output
+            st.subheader("Diabetes Prediction:")
+            if prediction[0] == 1:
+                st.error("The person is predicted to be diabetic.")
+            else:
+                st.success("The person is predicted to be non-diabetic.")
 
 # Run the application
 if __name__ == "__main__":
