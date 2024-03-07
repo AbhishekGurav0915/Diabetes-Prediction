@@ -26,7 +26,7 @@ def main():
     st.title("Diabetes Health Indicator")
 
     # Create a sidebar
-    st.sidebar.title('Options')
+    st.sidebar.title('BMI Calculator (KG)')
 
     # Add a BMI calculator with height and weight inputs
     height = st.sidebar.number_input('Enter your height in cm', min_value=0.0)
